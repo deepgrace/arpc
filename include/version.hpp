@@ -20,7 +20,7 @@
  *   time a set of code changes is merged to the master branch.
  */
 
-#define ARPC_VERSION_NUMBER 1
+#define ARPC_VERSION_NUMBER 2
 #define ARPC_VERSION_STRING "arpc/" ARPC_STRINGIZE(ARPC_VERSION_NUMBER)
 
 #endif

@@ -228,12 +228,13 @@ namespace arpc
         using connection_t = std::shared_ptr<session<server>>;
         using connections_t = std::unordered_map<uint64_t, connection_t>;
 
-        server(net::io_context& ioc, const std::string& host, const std::string& port) :
-        ioc(ioc), acceptor(ioc, tcp::endpoint(net::ip::address::from_string(host), std::stoi(port)))
+        server(net::io_context& ioc, const std::string& port) :
+        ioc(ioc), acceptor(ioc, tcp::endpoint(tcp::v4(), std::stoi(port)))
         {
         }
 
-        server(net::io_context& ioc, const std::string& port) : ioc(ioc), acceptor(ioc, tcp::endpoint(tcp::v4(), std::stoi(port)))
+        server(net::io_context& ioc, const std::string& host, const std::string& port) :
+        ioc(ioc), acceptor(ioc, tcp::endpoint(net::ip::make_address(host), std::stoi(port)))
         {
         }
 
@@ -242,14 +243,24 @@ namespace arpc
             do_accept();
         }
 
+        void stop()
+        {
+            acceptor.close();
+
+            for (auto& [_, s] : connections)
+                 s->close();
+
+            connections.clear();
+        }
+
         services_t& services()
         {
             return services_;
         }
 
-        void remove(uint64_t c)
+        void remove(uint64_t n)
         {
-            connections.erase(c);
+            connections.erase(n);
         }
 
         bool register_service(Service* service, Closure* closure)
@@ -277,10 +288,10 @@ namespace arpc
         {
             if (!ec)
             {
-                auto c = std::make_shared<session<server>>(*this, std::move(socket));
-                connections.try_emplace(uint64_t(c.get()), c);
+                auto s = std::make_shared<session<server>>(*this, std::move(socket));
+                connections.try_emplace(uint64_t(s.get()), s);
 
-                c->run();
+                s->run();
             }
 
             do_accept();
